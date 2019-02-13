@@ -1,12 +1,13 @@
-package pet
+package store
 
 import (
 	"github.com/jmoiron/sqlx"
 	"strconv"
 )
 
-type Repo interface {
+type PetRepo interface {
 	Get(int) (*Pet, error)
+	GetWithUser(int) (*Pet, error)
 	GetAll() ([]*Pet, error)
 	GetAllWithID([]int) ([]*Pet, error)
 	Create(pet *Pet) error
@@ -17,13 +18,14 @@ type Pet struct {
 	UserID int    `json:"user_id" db:"userid"`
 	Name   string `json:"name" db:"name"`
 	Type   string `json:"type" db:"type"`
+	User   *User  `json:"user,omitempty"` // One to one relation
 }
 
 type petRepo struct {
 	db *sqlx.DB
 }
 
-func NewPetRepo(db *sqlx.DB) Repo {
+func NewPetRepo(db *sqlx.DB) PetRepo {
 	return &petRepo{
 		db,
 	}
@@ -65,4 +67,16 @@ func (r *petRepo) GetAllWithID(ids []int) ([]*Pet, error) {
 	err := r.db.Select(&pets, "SELECT * FROM pet WHERE "+conditions)
 
 	return pets, err
+}
+
+func (r *petRepo) GetWithUser(id int) (*Pet, error) {
+	pet := &Pet{}
+	err := r.db.Get(pet, `SELECT * FROM pet WHERE id = $1`, id)
+
+	userRepo := NewUserRepository(r.db)
+	user, _ := userRepo.Get(pet.UserID)
+
+	pet.User = user
+
+	return pet, err
 }

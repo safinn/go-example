@@ -5,8 +5,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/safinn/play-arch/pkg/handlers"
 	"github.com/safinn/play-arch/pkg/service"
-	"github.com/safinn/play-arch/pkg/store/pet"
-	"github.com/safinn/play-arch/pkg/store/user"
+	"github.com/safinn/play-arch/pkg/store"
 	"log"
 	"net/http"
 )
@@ -15,19 +14,22 @@ func main() {
 	// Connect to DB
 	db := setupDb()
 
-	userRepo := user.NewUserRepository(db)
+	// Abstract creation of domain layers
+	userRepo := store.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
 	userHandler := handlers.NewUserHandler(userService)
 
 	http.HandleFunc("/", userHandler.Get)
 	http.HandleFunc("/id", userHandler.GetById)
 	http.HandleFunc("/create", userHandler.Create)
+	http.HandleFunc("/withpets", userHandler.GetAllWithPets)
 
-	petRepo := pet.NewPetRepo(db)
+	petRepo := store.NewPetRepo(db)
 	petService := service.NewPetService(petRepo)
 	petHandler := handlers.NewPetHandler(petService)
 
 	http.HandleFunc("/pet", petHandler.Get)
+	http.HandleFunc("/pet/withuser", petHandler.GetWithUser)
 	http.HandleFunc("/pet/id", petHandler.GetById)
 	http.HandleFunc("/pet/create", petHandler.Create)
 

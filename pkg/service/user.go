@@ -1,31 +1,38 @@
 package service
 
-import "github.com/safinn/play-arch/pkg/store/user"
+import (
+	"github.com/safinn/play-arch/pkg/store"
+)
 
 type UserService interface {
-	Add(user *user.User) error
-	Find(id int) (*user.User, error)
-	FindAll() ([]*user.User, error)
+	Add(user *store.User) error
+	Find(id int) (*store.User, error)
+	FindAll() ([]*store.User, error)
+	FindAllWithPets() ([]*store.User, error)
 }
 
 type userService struct {
-	repo user.Repo
+	repo store.UserRepo
 }
 
-func NewUserService(repo user.Repo) UserService {
+func NewUserService(repo store.UserRepo) UserService {
 	return &userService{
 		repo,
 	}
 }
 
-func (s *userService) Add(user *user.User) error {
+func (s *userService) Add(user *store.User) error {
 	return s.repo.Create(user)
 }
 
-func (s *userService) Find(id int) (*user.User, error) {
+func (s *userService) Find(id int) (*store.User, error) {
 	return s.repo.Get(id)
 }
 
-func (s *userService) FindAll() ([]*user.User, error) {
+func (s *userService) FindAll() ([]*store.User, error) {
 	return s.repo.GetAll()
+}
+
+func (s *userService) FindAllWithPets() ([]*store.User, error) {
+	return s.repo.GetAllWithPet()
 }
