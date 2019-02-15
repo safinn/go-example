@@ -5,9 +5,8 @@ import (
 )
 
 type UserRepo interface {
-	Get(id int) (*User, error)
+	Get(id int) *query
 	GetAll() ([]*User, error)
-	GetAllWithPet() ([]*User, error)
 	Create(user *User) error
 }
 
@@ -22,17 +21,51 @@ type userRepo struct {
 	db *sqlx.DB
 }
 
+type queryInterface interface {
+	WithPets() *query
+}
+
+type query struct {
+	db    *sqlx.DB
+	Users []*User
+}
+
+func (q *query) WithPets() *query {
+	var ids []int
+	for _, user := range q.Users {
+		ids = append(ids, user.ID)
+	}
+
+	petRepo := NewPetRepo(q.db)
+	pets, _ := petRepo.GetAllWithID(ids)
+
+	for _, user := range q.Users {
+		for _, pet := range pets {
+			if pet.UserID == user.ID {
+				user.Pets = append(user.Pets, pet)
+			}
+		}
+	}
+
+	return q
+}
+
 func NewUserRepository(db *sqlx.DB) UserRepo {
 	return &userRepo{
 		db,
 	}
 }
 
-func (r *userRepo) Get(id int) (*User, error) {
+func (r *userRepo) Get(id int) *query {
 	user := &User{}
-	err := r.db.Get(user, `SELECT * FROM user WHERE id = $1`, id)
+	_ = r.db.Get(user, `SELECT * FROM user WHERE id = $1`, id)
 
-	return user, err
+	query := &query{
+		db:    r.db,
+		Users: []*User{user},
+	}
+
+	return query
 }
 
 func (r *userRepo) GetAll() ([]*User, error) {
@@ -47,28 +80,4 @@ func (r *userRepo) Create(user *User) error {
 	stmt.Exec(user.ID, user.Name, user.Age)
 
 	return nil
-}
-
-func (r *userRepo) GetAllWithPet() ([]*User, error) {
-	var users []*User
-
-	err := r.db.Select(&users, "SELECT * FROM user")
-
-	var ids []int
-	for _, user := range users {
-		ids = append(ids, user.ID)
-	}
-
-	petRepo := NewPetRepo(r.db)
-	pets, _ := petRepo.GetAllWithID(ids)
-
-	for _, user := range users {
-		for _, pet := range pets {
-			if pet.UserID == user.ID {
-				user.Pets = append(user.Pets, pet)
-			}
-		}
-	}
-
-	return users, err
 }

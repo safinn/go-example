@@ -22,7 +22,7 @@ func main() {
 	http.HandleFunc("/", userHandler.Get)
 	http.HandleFunc("/id", userHandler.GetById)
 	http.HandleFunc("/create", userHandler.Create)
-	http.HandleFunc("/withpets", userHandler.GetAllWithPets)
+	http.HandleFunc("/withpets", userHandler.GetWithPets)
 
 	petRepo := store.NewPetRepo(db)
 	petService := service.NewPetService(petRepo)

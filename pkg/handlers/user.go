@@ -10,7 +10,7 @@ import (
 
 type UserHandler interface {
 	Get(w http.ResponseWriter, r *http.Request)
-	GetAllWithPets(w http.ResponseWriter, r *http.Request)
+	GetWithPets(w http.ResponseWriter, r *http.Request)
 	GetById(w http.ResponseWriter, r *http.Request)
 	Create(w http.ResponseWriter, r *http.Request)
 }
@@ -60,10 +60,12 @@ func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func (h *userHandler) GetAllWithPets(w http.ResponseWriter, r *http.Request) {
-	users, _ := h.userService.FindAllWithPets()
+func (h *userHandler) GetWithPets(w http.ResponseWriter, r *http.Request) {
+	id := r.FormValue("id")
+	idInt, _ := strconv.Atoi(id)
+	user, _ := h.userService.FindWithPet(idInt)
 
-	response, _ := json.Marshal(users)
+	response, _ := json.Marshal(user)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

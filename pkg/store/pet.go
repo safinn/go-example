@@ -74,9 +74,9 @@ func (r *petRepo) GetWithUser(id int) (*Pet, error) {
 	err := r.db.Get(pet, `SELECT * FROM pet WHERE id = $1`, id)
 
 	userRepo := NewUserRepository(r.db)
-	user, _ := userRepo.Get(pet.UserID)
+	userQuery := userRepo.Get(pet.UserID)
 
-	pet.User = user
+	pet.User = userQuery.Users[0]
 
 	return pet, err
 }
