@@ -26,7 +26,7 @@ func (s *userService) Add(user *store.User) error {
 }
 
 func (s *userService) Find(id int) (*store.User, error) {
-	user := s.repo.Get(id).Users[0]
+	user := s.repo.Get(id).Exec()[0]
 	return user, nil
 }
 
@@ -35,5 +35,5 @@ func (s *userService) FindAll() ([]*store.User, error) {
 }
 
 func (s *userService) FindWithPet(id int) (*store.User, error) {
-	return s.repo.Get(id).WithPets().Users[0], nil
+	return s.repo.Get(id).WithPets().Exec()[0], nil
 }
