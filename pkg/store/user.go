@@ -4,12 +4,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type UserRepo interface {
-	Get(id int) queryInterface
-	GetAll() ([]*User, error)
-	Create(user *User) error
-}
-
 type User struct {
 	ID   int    `json:"id" db:"id"`
 	Name string `json:"name" db:"name"`
@@ -21,27 +15,26 @@ type userRepo struct {
 	db *sqlx.DB
 }
 
-type queryInterface interface {
-	WithPets() queryInterface
-	Exec() []*User
-}
-
-type query struct {
+type Query struct {
 	db      *sqlx.DB
 	Users   []*User
-	queries []func()
+	queries []func() error
 }
 
-func (q *query) WithPets() queryInterface {
+func (q *Query) WithPets() *Query {
 
-	queryFunc := func() {
+	queryFunc := func() error {
 		var ids []int
 		for _, user := range q.Users {
 			ids = append(ids, user.ID)
 		}
 
 		petRepo := NewPetRepo(q.db)
-		pets, _ := petRepo.GetAllWithID(ids)
+		pets, error := petRepo.GetAllWithID(ids)
+
+		if error != nil {
+			return error
+		}
 
 		for _, user := range q.Users {
 			for _, pet := range pets {
@@ -50,6 +43,8 @@ func (q *query) WithPets() queryInterface {
 				}
 			}
 		}
+
+		return nil
 	}
 
 	q.queries = append(q.queries, queryFunc)
@@ -57,33 +52,40 @@ func (q *query) WithPets() queryInterface {
 	return q
 }
 
-func (q *query) Exec() []*User {
+func (q *Query) Exec() ([]*User, error) {
 	for _, query := range q.queries {
-		query()
+		error := query()
+		if error != nil {
+			return nil, error
+		}
 	}
 
-	return q.Users
+	return q.Users, nil
 }
 
-func NewUserRepository(db *sqlx.DB) UserRepo {
+func NewUserRepository(db *sqlx.DB) *userRepo {
 	return &userRepo{
 		db,
 	}
 }
 
-func (r *userRepo) Get(id int) queryInterface {
-	query := &query{
+func (r *userRepo) Get(id int) *Query {
+	query := &Query{
 		db:      r.db,
 		Users:   []*User{},
-		queries: []func(){},
+		queries: []func() error{},
 	}
 
-	queryFunc := func() {
+	queryFunc := func() error {
 		user := &User{}
-		_ = r.db.Get(user, `SELECT * FROM user WHERE id = $1`, id)
+		error := r.db.Get(user, `SELECT * FROM "user" WHERE id = $1`, id)
+		if error != nil {
+			return error
+		}
 
 		query.Users = append(query.Users, user)
 
+		return nil
 	}
 
 	query.queries = append(query.queries, queryFunc)
@@ -93,7 +95,7 @@ func (r *userRepo) Get(id int) queryInterface {
 
 func (r *userRepo) GetAll() ([]*User, error) {
 	var users []*User
-	err := r.db.Select(&users, "SELECT * FROM user")
+	err := r.db.Select(&users, `SELECT * FROM "user"`)
 
 	return users, err
 }

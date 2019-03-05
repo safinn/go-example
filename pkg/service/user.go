@@ -4,6 +4,12 @@ import (
 	"github.com/safinn/play-arch/pkg/store"
 )
 
+type UserRepo interface {
+	Get(id int) *store.Query
+	GetAll() ([]*store.User, error)
+	Create(user *store.User) error
+}
+
 type UserService interface {
 	Add(user *store.User) error
 	Find(id int) (*store.User, error)
@@ -12,10 +18,10 @@ type UserService interface {
 }
 
 type userService struct {
-	repo store.UserRepo
+	repo UserRepo
 }
 
-func NewUserService(repo store.UserRepo) UserService {
+func NewUserService(repo UserRepo) UserService {
 	return &userService{
 		repo,
 	}
@@ -26,8 +32,11 @@ func (s *userService) Add(user *store.User) error {
 }
 
 func (s *userService) Find(id int) (*store.User, error) {
-	user := s.repo.Get(id).Exec()[0]
-	return user, nil
+	users, error := s.repo.Get(id).Exec()
+	if error != nil {
+		return nil, error
+	}
+	return users[0], nil
 }
 
 func (s *userService) FindAll() ([]*store.User, error) {
@@ -35,5 +44,9 @@ func (s *userService) FindAll() ([]*store.User, error) {
 }
 
 func (s *userService) FindWithPet(id int) (*store.User, error) {
-	return s.repo.Get(id).WithPets().Exec()[0], nil
+	users, error := s.repo.Get(id).WithPets().Exec()
+	if error != nil {
+		return nil, error
+	}
+	return users[0], nil
 }

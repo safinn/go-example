@@ -1,0 +1,20 @@
+jobs:
+  postgres-integration-test:
+    docker:
+      - image: circleci/golang:1.12.0
+      - image: circleci/postgres:9.4-ram
+        environment:
+          POSTGRES_USER: riskledger
+          POSTGRES_PASSWORD: riskledger
+          POSTGRES_DB: riskledger
+    working_directory: /go/src/github.com/riskledger/riskledger-backend
+    steps:
+      - checkout
+      - run: sudo apt update
+      - run: sudo apt install -y postgresql-client
+      - run: dockerize -wait tcp://127.0.0.1:5432 -timeout 120s
+      - run: 'PGPASSWORD=riskledger psql -p 5432 -h 127.0.0.1 -U riskledger -d riskledger -f ./setup.sql'
+      - run:
+          name: postgres integration tests
+          command: './scripts/circle-test-postgres.sh'
+

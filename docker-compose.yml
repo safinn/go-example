@@ -1,0 +1,12 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:10.4
+    volumes:
+      - ./tmp/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: riskledger
+      POSTGRES_PASSWORD: riskledger
+      POSTGRES_DB: riskledger
